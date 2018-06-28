@@ -148,6 +148,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 osSwTmrTaskCreate(VOID)
 #endif
 }
 
+#if (LOSCFG_STATIC_QUEUE == YES)
+LOS_QUEUE_DEF (SwTmr, OS_SWTMR_HANDLE_QUEUE_SIZE, sizeof (SWTMR_HANDLER_ITEM_S));
+#endif
+
 /*****************************************************************************
 Function   : osSwTmrInit
 Description: Initializes Software Timer
@@ -197,7 +201,11 @@ LITE_OS_SEC_TEXT_INIT UINT32 osSwTmrInit(VOID)
     }
 #endif
 
+#if (LOSCFG_STATIC_QUEUE == NO)
     uwRet = LOS_QueueCreate((CHAR *)NULL, OS_SWTMR_HANDLE_QUEUE_SIZE, &m_uwSwTmrHandlerQueue, 0, sizeof(SWTMR_HANDLER_ITEM_S));
+#else
+    uwRet = LOS_QUEUE_INIT (SwTmr, &m_uwSwTmrHandlerQueue);
+#endif
     if (uwRet != LOS_OK)
     {
         return LOS_ERRNO_SWTMR_QUEUE_CREATE_FAILED;

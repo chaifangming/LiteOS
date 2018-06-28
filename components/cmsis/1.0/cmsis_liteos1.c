@@ -641,7 +641,7 @@ static inline UINT32 osMessageCheckRet(UINT32 uwRet)
 /// Create and Initialize Message Queue
 osMessageQId osMessageCreate(osMessageQDef_t *queue_def, osThreadId thread_id)
 {
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) && (LOSCFG_STATIC_QUEUE == NO))
     UINT32 uwQueueID;
     UINT32 uwRet;
 
@@ -650,16 +650,17 @@ osMessageQId osMessageCreate(osMessageQDef_t *queue_def, osThreadId thread_id)
     {
         return (osMessageQId)NULL;
     }
+
     uwRet = LOS_QueueCreate((char *)NULL, (UINT16)(queue_def->queue_sz), &uwQueueID, 0,(UINT16)( queue_def->item_sz));
     if (uwRet == LOS_OK)
     {
         return (osMessageQId)GET_QUEUE_HANDLE(uwQueueID);
     }
     else
+#endif
     {
         return (osMessageQId)NULL;
     }
-#endif
 }
 
 /// Put a Message to a Queue header
@@ -729,16 +730,18 @@ osEvent osMessageGet(osMessageQId queue_id, UINT32 millisec)
 /// Create and Initialize mail queue
 osMailQId osMailCreate(osMailQDef_t *queue_def, osThreadId thread_id)
 {
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) && (LOSCFG_STATIC_QUEUE == NO))
     UINT32 uwRet;
     UINT32 uwQueueID;
     UINT32 uwBlkSize, uwBoxSize;
 
     (void)(thread_id);
+
     if (NULL == queue_def)
     {
         return (osMailQId)NULL;
     }
+
     uwRet = LOS_QueueCreate((char *)NULL, (UINT16)(queue_def->queue_sz), &uwQueueID, 0, sizeof(UINT32));
     if (uwRet == LOS_OK)
     {
@@ -749,8 +752,8 @@ osMailQId osMailCreate(osMailQDef_t *queue_def, osThreadId thread_id)
         (void)LOS_MemboxInit(*(((void **)queue_def->pool) + 1), uwBoxSize, uwBlkSize);
         return (osMailQId)queue_def->pool;
     }
-    return (osMailQId)NULL;
 #endif
+    return (osMailQId)NULL;
 }
 
 /// Allocate a memory block from a mail

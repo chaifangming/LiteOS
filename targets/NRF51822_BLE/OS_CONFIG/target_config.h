@@ -221,7 +221,7 @@ extern "C" {
  * @ingroup los_config
  * Maximum supported number of queues rather than the number of usable queues
  */
-#define LOSCFG_BASE_IPC_QUEUE_LIMIT                         10              //the max queue-numb
+#define LOSCFG_BASE_IPC_QUEUE_LIMIT                         3
 
 
 /*=============================================================================
@@ -398,6 +398,7 @@ extern UINT32 g_sys_mem_addr_end;
 #define LOSCFG_STATIC_TIMER                                 YES
 #define LOSCFG_SOC_HAS_SYSTICK                              NO
 #define LOSCFG_STATIC_SEM                                   YES
+#define LOSCFG_STATIC_QUEUE                                 YES
 
 #define LOSCFG_HEAP_MEMORY_PEAK_STATISTICS                  NO
 

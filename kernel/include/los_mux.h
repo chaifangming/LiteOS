@@ -175,6 +175,8 @@ extern "C"{
  */
 #define LOS_ERRNO_MUX_MAXNUM_ZERO         LOS_ERRNO_OS_ERROR(LOS_MOD_MUX, 0x0C)
 
+#if (LOSCFG_STATIC_MUX == NO)
+
 /**
  *@ingroup los_mux
  *@brief Create a mutex.
@@ -221,6 +223,12 @@ extern UINT32 LOS_MuxCreate(UINT32 *puwMuxHandle);
  *@since Huawei LiteOS V100R001C00
  */
 extern UINT32 LOS_MuxDelete(UINT32 puwMuxHandle);
+
+#else
+
+extern UINT32 LOS_StaticMuxInit (void * pvMux, UINT32 * puwMuxHandle);
+
+#endif
 
 /**
  *@ingroup los_mux

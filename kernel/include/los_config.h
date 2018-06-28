@@ -645,6 +645,14 @@ extern UINT32 g_sys_mem_addr_end;
 #define LOSCFG_STATIC_SEM                                   NO
 #endif
 
+#ifndef LOSCFG_STATIC_MUX
+#define LOSCFG_STATIC_MUX                                   NO
+#endif
+
+#ifndef LOSCFG_STATIC_QUEUE
+#define LOSCFG_STATIC_QUEUE                                 NO
+#endif
+
 
 /*=============================================================================
                                        LiteOS kernel version configuration

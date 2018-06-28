@@ -60,6 +60,24 @@ typedef struct
     UINT16          usPriority;      /**< Priority of the thread that is locking a mutex */
 } MUX_CB_S;
 
+#if (LOSCFG_STATIC_MUX == YES)
+
+/**
+ * @ingroup los_mux
+ * Define mutex object at compile time.
+ */
+#define LOS_MUX_DEF(name)   \
+LITE_OS_SEC_BSS static MUX_CB_S s_##name##mux = {0};
+
+/**
+ * @ingroup los_mux
+ * dynamically initialize the mutex object which is defined at compile time.
+ */
+
+#define LOS_MUX_INIT(name, phandle)                                     \
+    LOS_StaticMuxInit ((void *) &s_##name##mux, phandle)
+#endif
+
 /**
  * @ingroup los_mux
  * Mutex state: not in use.
@@ -72,13 +90,21 @@ typedef struct
  */
 #define OS_MUX_USED                     1
 
+#if (LOSCFG_STATIC_MUX == NO)
 extern MUX_CB_S             *g_pstAllMux;
+#else
+extern MUX_CB_S             *g_apstAllMux[LOSCFG_BASE_IPC_MUX_LIMIT];
+#endif
 
 /**
  * @ingroup los_mux
  * Obtain the pointer to a mutex object of the mutex that has a specified handle.
  */
-#define GET_MUX(muxid)                  (((MUX_CB_S *)g_pstAllMux) + (muxid))
+#if (LOSCFG_STATIC_MUX == NO)
+#define GET_MUX(muxid)                  (&g_pstAllMux[muxid])
+#else
+#define GET_MUX(muxid)                  (g_apstAllMux[muxid])
+#endif
 
 /**
  *@ingroup los_mux

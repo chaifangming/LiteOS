@@ -350,6 +350,8 @@ typedef struct tagQueueInfo
     UINT32     uwWaitMemTask;                   /**< Memory task                               */
 } QUEUE_INFO_S;
 
+#if (LOSCFG_STATIC_QUEUE == NO)
+
 /**
  *@ingroup los_queue
  *@brief Create a message queue.
@@ -382,6 +384,9 @@ extern UINT32 LOS_QueueCreate(CHAR *pcQueueName,
                              UINT32 *puwQueueID,
                              UINT32 uwFlags,
                              UINT16 usMaxMsgSize);
+#else
+extern UINT32 LOS_StaticQueueInit (void * pvQueueCB, UINT32 * puwQueueID);
+#endif
 
 /**
  *@ingroup los_queue
@@ -627,6 +632,7 @@ extern UINT32 LOS_QueueWriteHeadCopy(UINT32 uwQueueID,
                                      UINT32 uwBufferSize,
                                      UINT32 uwTimeOut );
 
+#if (LOSCFG_STATIC_QUEUE == NO)
 
  /**
   *@ingroup los_queue
@@ -653,6 +659,8 @@ extern UINT32 LOS_QueueWriteHeadCopy(UINT32 uwQueueID,
   *@since Huawei LiteOS V100R001C00
   */
 extern UINT32 LOS_QueueDelete(UINT32 uwQueueID);
+
+#endif
 
 /**
  *@ingroup los_queue

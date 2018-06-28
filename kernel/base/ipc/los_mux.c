@@ -48,12 +48,14 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
-
 #if (LOSCFG_BASE_IPC_MUX == YES)
 
+#if (LOSCFG_STATIC_MUX == NO)
 LITE_OS_SEC_BSS MUX_CB_S             *g_pstAllMux;
 LITE_OS_SEC_BSS LOS_DL_LIST          g_stUnusedMuxList;
-
+#else
+LITE_OS_SEC_BSS MUX_CB_S             *g_apstAllMux[LOSCFG_BASE_IPC_MUX_LIMIT];
+#endif
 
 /*****************************************************************************
  Funtion	     : osMuxInit,
@@ -64,6 +66,7 @@ LITE_OS_SEC_BSS LOS_DL_LIST          g_stUnusedMuxList;
  *****************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 osMuxInit(VOID)
 {
+#if (LOSCFG_STATIC_MUX == NO)
     MUX_CB_S *pstMuxNode;
     UINT32   uwIndex;
 
@@ -87,8 +90,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 osMuxInit(VOID)
         pstMuxNode->ucMuxStat   = OS_MUX_UNUSED;
         LOS_ListTailInsert(&g_stUnusedMuxList, &pstMuxNode->stMuxList);
     }
+#endif
+
     return LOS_OK;
 }
+
+#if (LOSCFG_STATIC_MUX == NO)
 
 /*****************************************************************************
  Function     : LOS_MuxCreate
@@ -174,6 +181,45 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_MuxDelete(UINT32 uwMuxHandle)
 ErrHandler:
     OS_RETURN_ERROR_P2(uwErrLine, uwErrNo);
 }
+
+#else
+
+/*****************************************************************************
+ Function     : LOS_StaticMuxInit
+ Description  : Initialize the mutex object which is defined at compile time.
+ Input        : None
+ Output       : pvMux ------ mutex object
+ Return       : LOS_OK on success ,or error code on failure
+ *****************************************************************************/
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_StaticMuxInit (void * pvMux, UINT32 * puwMuxHandle)
+{
+    static UINT32 uwSemID = 0;
+    UINTPTR uvIntSave;
+    MUX_CB_S * pstMux = (MUX_CB_S *) pvMux;
+    UINT32 ret = LOS_OK;
+
+    uvIntSave = LOS_IntLock();
+
+    if (uwSemID < LOSCFG_BASE_IPC_MUX_LIMIT)
+    {
+        /* static mux is already defined as zeroed object */
+        g_apstAllMux [uwSemID] = pstMux;
+        pstMux->ucMuxID = uwSemID;
+        pstMux->ucMuxStat = OS_MUX_USED;
+        *puwMuxHandle = uwSemID;
+        uwSemID++;
+    }
+    else
+    {
+        ret = LOS_ERRNO_MUX_ALL_BUSY;
+    }
+
+    LOS_IntRestore(uvIntSave);
+
+    return ret;
+}
+
+#endif
 
 /*****************************************************************************
  Function     : LOS_MuxPend
