@@ -359,6 +359,7 @@ uint32_t osKernelGetSysTimerFreq (void)
 
 //  ==== Thread Management Functions ====
 
+#if (LOSCFG_STATIC_TASK == NO)
 osThreadId_t osThreadNew (osThreadFunc_t func, void *argument, const osThreadAttr_t *attr)
 {
     UNUSED(argument);
@@ -398,6 +399,7 @@ osThreadId_t osThreadNew (osThreadFunc_t func, void *argument, const osThreadAtt
 
     return (osThreadId_t)pstTaskCB;
 }
+#endif
 
 
 const char *osThreadGetName (osThreadId_t thread_id)
@@ -722,14 +724,14 @@ osStatus_t osThreadTerminate (osThreadId_t thread_id)
 uint32_t osThreadGetCount (void)
 {
     uint32_t uwCount = 0;
-	int index = 0;
+    int index;
 
     if (OS_INT_ACTIVE)
     {
         return 0U;
     }
 
-    for(; index <= LOSCFG_BASE_CORE_TSK_LIMIT; index++)
+    for(index = 0; index <= LOSCFG_BASE_CORE_TSK_LIMIT; index++)
     {
         if (!((g_pstTaskCBArray + index)->usTaskStatus & OS_TASK_STATUS_UNUSED))
         {
@@ -785,6 +787,7 @@ osStatus_t osDelayUntil (uint64_t ticks)
 
 //  ==== Timer Management Functions ====
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
+#if (LOSCFG_STATIC_TIMER == NO)
 osTimerId_t osTimerNew (osTimerFunc_t func, osTimerType_t type, void *argument, const osTimerAttr_t *attr)
 {
     UNUSED(attr);
@@ -819,6 +822,7 @@ osTimerId_t osTimerNew (osTimerFunc_t func, osTimerType_t type, void *argument, 
 
     return (osTimerId_t)OS_SWT_FROM_SID(usSwTmrID);
 }
+#endif
 
 
 osStatus_t osTimerStart (osTimerId_t timer_id, uint32_t ticks)
@@ -898,7 +902,7 @@ uint32_t osTimerIsRunning (osTimerId_t timer_id)
     return (OS_SWTMR_STATUS_TICKING == ((SWTMR_CTRL_S *)timer_id)->ucState);
 }
 
-
+#if (LOSCFG_STATIC_TIMER == NO)
 osStatus_t osTimerDelete (osTimerId_t timer_id)
 {
     UINT32 uwRet;
@@ -928,6 +932,7 @@ osStatus_t osTimerDelete (osTimerId_t timer_id)
         return osErrorResource;
     }
 }
+#endif
 #endif
 
 osEventFlagsId_t osEventFlagsNew (const osEventFlagsAttr_t *attr)
@@ -1262,6 +1267,7 @@ osStatus_t osMutexDelete (osMutexId_t mutex_id)
 //  ==== Semaphore Management Functions ====
 #if (LOSCFG_BASE_IPC_SEM == YES)
 
+#if (LOSCFG_STATIC_SEM == NO)
 osSemaphoreId_t osSemaphoreNew (uint32_t max_count, uint32_t initial_count, const osSemaphoreAttr_t *attr)
 {
     UINT32 uwRet;
@@ -1412,10 +1418,11 @@ osStatus_t osSemaphoreDelete (osSemaphoreId_t semaphore_id)
     }
 }
 #endif
+#endif
 
 
 //  ==== Message Queue Management Functions ====
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) && (LOSCFG_STATIC_QUEUE == NO))
 osMessageQueueId_t osMessageQueueNew (uint32_t msg_count, uint32_t msg_size, const osMessageQueueAttr_t *attr)
 {
     UINT32 uwQueueID;
@@ -1581,6 +1588,7 @@ uint32_t osMessageQueueGetSpace (osMessageQueueId_t mq_id)
     return space;
 }
 
+#if (LOSCFG_STATIC_QUEUE == NO)
 
 osStatus_t osMessageQueueDelete (osMessageQueueId_t mq_id)
 {
@@ -1611,6 +1619,8 @@ osStatus_t osMessageQueueDelete (osMessageQueueId_t mq_id)
         return osErrorResource;
     }
 }
+#endif
+
 #endif
 
 #ifdef LOS_RUNSTOP

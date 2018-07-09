@@ -88,6 +88,7 @@ osStatus osKernelInitialize (void)
 // Thread Public API
 
 /// Create a thread and add it to Active Threads and set it to state READY
+#if (LOSCFG_STATIC_TASK == NO)
 osThreadId osThreadCreate(const osThreadDef_t *thread_def, void *argument)
 {
     osThreadId tskcb;
@@ -119,6 +120,7 @@ osThreadId osThreadCreate(const osThreadDef_t *thread_def, void *argument)
 
     return tskcb;
 }
+#endif
 
 /// Return the thread ID of the current running thread
 osThreadId osThreadGetId(void)
@@ -209,6 +211,7 @@ osPriority osThreadGetPriority(osThreadId thread_id)
     return (osPriority)osPriorityRet;
 }
 
+#if (LOSCFG_STATIC_SEM == NO)
 osSemaphoreId osBinarySemaphoreCreate(const osSemaphoreDef_t *semaphore_def, INT32 count)
 {
 #if (LOSCFG_BASE_IPC_SEM == YES)
@@ -260,6 +263,7 @@ osSemaphoreId osSemaphoreCreate(const osSemaphoreDef_t *semaphore_def, INT32 cou
     }
 #endif
 }
+#endif
 
 /// Wait until a Semaphore becomes available
 /*
@@ -637,7 +641,7 @@ static inline UINT32 osMessageCheckRet(UINT32 uwRet)
 /// Create and Initialize Message Queue
 osMessageQId osMessageCreate(osMessageQDef_t *queue_def, osThreadId thread_id)
 {
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) && (LOSCFG_STATIC_QUEUE == NO))
     UINT32 uwQueueID;
     UINT32 uwRet;
 
@@ -646,16 +650,17 @@ osMessageQId osMessageCreate(osMessageQDef_t *queue_def, osThreadId thread_id)
     {
         return (osMessageQId)NULL;
     }
+
     uwRet = LOS_QueueCreate((char *)NULL, (UINT16)(queue_def->queue_sz), &uwQueueID, 0,(UINT16)( queue_def->item_sz));
     if (uwRet == LOS_OK)
     {
         return (osMessageQId)GET_QUEUE_HANDLE(uwQueueID);
     }
     else
+#endif
     {
         return (osMessageQId)NULL;
     }
-#endif
 }
 
 /// Put a Message to a Queue header
@@ -725,16 +730,18 @@ osEvent osMessageGet(osMessageQId queue_id, UINT32 millisec)
 /// Create and Initialize mail queue
 osMailQId osMailCreate(osMailQDef_t *queue_def, osThreadId thread_id)
 {
-#if (LOSCFG_BASE_IPC_QUEUE == YES)
+#if ((LOSCFG_BASE_IPC_QUEUE == YES) && (LOSCFG_STATIC_QUEUE == NO))
     UINT32 uwRet;
     UINT32 uwQueueID;
     UINT32 uwBlkSize, uwBoxSize;
 
     (void)(thread_id);
+
     if (NULL == queue_def)
     {
         return (osMailQId)NULL;
     }
+
     uwRet = LOS_QueueCreate((char *)NULL, (UINT16)(queue_def->queue_sz), &uwQueueID, 0, sizeof(UINT32));
     if (uwRet == LOS_OK)
     {
@@ -745,8 +752,8 @@ osMailQId osMailCreate(osMailQDef_t *queue_def, osThreadId thread_id)
         (void)LOS_MemboxInit(*(((void **)queue_def->pool) + 1), uwBoxSize, uwBlkSize);
         return (osMailQId)queue_def->pool;
     }
-    return (osMailQId)NULL;
 #endif
+    return (osMailQId)NULL;
 }
 
 /// Allocate a memory block from a mail
@@ -1077,6 +1084,7 @@ osTimerId osTimerExtCreate (const osTimerDef_t *timer_def, os_timer_type type, v
 }
 #endif
 
+#if (LOSCFG_STATIC_TIMER == NO)
 osTimerId osTimerCreate (const osTimerDef_t *timer_def, os_timer_type type, void *argument)
 {
     SWTMR_CTRL_S *pstSwtmr = (SWTMR_CTRL_S *)NULL;
@@ -1109,6 +1117,7 @@ osTimerId osTimerCreate (const osTimerDef_t *timer_def, os_timer_type type, void
 #endif
     return pstSwtmr;
 }
+#endif
 
 osStatus osTimerStart (osTimerId timer_id, UINT32 millisec)
 {
@@ -1191,6 +1200,7 @@ osStatus osTimerRestart (osTimerId timer_id, UINT32 millisec, UINT8 strict)
     return osOK;
 }
 
+#if (LOSCFG_STATIC_TIMER == NO)
 osStatus osTimerDelete (osTimerId timer_id)
 {
 #if (LOSCFG_BASE_CORE_SWTMR == YES)
@@ -1212,9 +1222,10 @@ osStatus osTimerDelete (osTimerId timer_id)
         return osErrorResource;
     }
 #endif
-    return osOK;
 
+    return osOK;
 }
+#endif
 
 osStatus osDelay (UINT32 millisec)
 {

@@ -627,6 +627,81 @@ extern UINT32 g_sys_mem_addr_end;
 
 
 /*=============================================================================
+                                       Task statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating tasks statically.
+ */
+#ifndef LOSCFG_STATIC_TASK
+#define LOSCFG_STATIC_TASK                                  NO
+#endif
+
+
+/*=============================================================================
+                                       Timer statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating timers statically.
+ */
+#ifndef LOSCFG_STATIC_TIMER
+#define LOSCFG_STATIC_TIMER                                 NO
+#endif
+
+/*=============================================================================
+                                       Semaphore statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating semaphores statically.
+ */
+#ifndef LOSCFG_STATIC_SEM
+#define LOSCFG_STATIC_SEM                                   NO
+#endif
+
+/*=============================================================================
+                                       Mux statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating muxes statically.
+ */
+#ifndef LOSCFG_STATIC_MUX
+#define LOSCFG_STATIC_MUX                                   NO
+#endif
+
+/*=============================================================================
+                                       Queue statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating queues statically.
+ */
+#ifndef LOSCFG_STATIC_QUEUE
+#define LOSCFG_STATIC_QUEUE                                 NO
+#endif
+
+
+/*=============================================================================
+                                       Systick enable configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item for systick enabling.
+ */
+#ifndef LOSCFG_SOC_HAS_SYSTICK
+#define LOSCFG_SOC_HAS_SYSTICK                              YES
+#endif
+
+
+/*=============================================================================
                                        LiteOS kernel version configuration
 =============================================================================*/
 

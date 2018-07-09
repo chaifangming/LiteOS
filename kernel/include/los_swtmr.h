@@ -303,6 +303,66 @@ typedef struct tagSwTmrCtrl
     SWTMR_PROC_FUNC     pfnHandler;     /**< Callback function that handles software timer timeout   */
 } SWTMR_CTRL_S;
 
+#if (LOSCFG_STATIC_TIMER == YES)
+#if (LOSCFG_BASE_CORE_SWTMR_ALIGN == YES)
+#error "LOSCFG_STATIC_TIMER == YES not support LOSCFG_BASE_CORE_SWTMR_ALIGN == YES"
+#endif
+
+/**
+ *@ingroup los_swtmr
+ *@brief Define a software timer statically.
+ *
+ *@par Description:
+ *This macro is used to define a software timer statically at compile time.
+ *@attention
+ *<ul>
+ *<li>The specific timer must be initialized at system start up by LOS_TIMER_INIT.</li>
+ *</ul>
+ *
+ *@param  name     [IN] Software timer name.
+ *@param  interval [IN] Timing duration of the software timer to be created (unit: ms).
+ *@param  mode     [IN] Software timer mode. Pass in one of the modes specified by enSwTmrType. There are three types of modes, one-off, periodic, and continuously periodic after one-off, of which the third mode is not supported temporarily.
+ *@param  handler  [IN] Callback function that handles software timer timeout.
+ *@param  uwArg    [IN] Parameter passed in when the callback function that handles software timer timeout is called.
+ *
+ *@par Dependency:
+ *<ul><li>los_swtmr.h: the header file that contains the API declaration.</li></ul>
+ *@see LOS_TIMER_INIT
+ */
+#define LOS_TIMER_DEF(name, interval, mode, handler, arg)                      \
+LOS_STATIC_ASSERT(interval != 0);                                              \
+LOS_STATIC_ASSERT(                                                             \
+    ((LOS_SWTMR_MODE_ONCE == mode)                                             \
+    || (LOS_SWTMR_MODE_PERIOD == mode)                                         \
+    || (LOS_SWTMR_MODE_NO_SELFDELETE == mode)));                               \
+static SWTMR_CTRL_S s_##name##CB =                                             \
+{                                                                              \
+    NULL,                                                                      \
+    0,                                                                         \
+    mode,                                                                      \
+    0,                                                                         \
+    0,                                                                         \
+    interval,                                                                  \
+    (UINT32) arg,                                                              \
+    (SWTMR_PROC_FUNC) handler                                                  \
+}
+
+/**
+ *@ingroup los_swtmr
+ *@brief Initialize a software timer created statically.
+ *
+ *@par Description:
+ *This macro is used to initialize a software timer created statically.
+ *
+ *@param  name [IN] Software timer name.
+ *@param  tid  [OUT] Software timer ID.
+ *
+ *@par Dependency:
+ *<ul><li>los_swtmr.h: the header file that contains the API declaration.</li></ul>
+ *@see LOS_TIMER_DEF
+ */
+#define LOS_TIMER_INIT(name, tid) LOS_StaticTimerInit(&s_##name##CB, tid)
+#endif
 
 /**
  *@ingroup los_swtmr
@@ -379,6 +439,8 @@ extern UINT32 LOS_SwtmrStop(UINT16 usSwTmrID);
  */
 extern UINT32 LOS_SwtmrTimeGet(UINT16 usSwTmrID, UINT32 *uwTick);
 
+#if (LOSCFG_STATIC_TIMER == NO)
+
 /**
  *@ingroup los_swtmr
  *@brief Create a software timer.
@@ -408,11 +470,17 @@ extern UINT32 LOS_SwtmrTimeGet(UINT16 usSwTmrID, UINT32 *uwTick);
  *@see LOS_SwtmrDelete
  *@since Huawei LiteOS V100R001C00
  */
- extern UINT32 LOS_SwtmrCreate(UINT32 uwInterval, UINT8 ucMode, SWTMR_PROC_FUNC pfnHandler, UINT16 *pusSwTmrID, UINT32 uwArg
+
+extern UINT32 LOS_SwtmrCreate(UINT32 uwInterval, UINT8 ucMode, SWTMR_PROC_FUNC pfnHandler, UINT16 *pusSwTmrID, UINT32 uwArg
                                           #if (LOSCFG_BASE_CORE_SWTMR_ALIGN == YES)
                                           , UINT8 ucRouses, UINT8 ucSensitive
                                           #endif
                                           );
+#else
+
+UINT32 LOS_StaticTimerInit(SWTMR_CTRL_S *pstSwtmr, UINT16 *pusTimerID);
+
+#endif
 
 /**
  *@ingroup los_swtmr

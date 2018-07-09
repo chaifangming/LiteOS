@@ -91,6 +91,50 @@ typedef struct tagQueueCB
     LOS_DL_LIST stMemList;                              /**< Pointer to the memory linked list */
 } QUEUE_CB_S;
 
+#if (LOSCFG_STATIC_QUEUE == YES)
+/**
+  *  @ingroup los_queue
+  *  Define a queue statically.
+  */
+#define LOS_QUEUE_DEF(name, len, msgsize)                               \
+LOS_STATIC_ASSERT (len != 0);                                           \
+LOS_STATIC_ASSERT (msgsize != 0);                                       \
+static UINT8 s_##name##QueueBuff [len * (msgsize + sizeof (UINT32))];   \
+static QUEUE_CB_S s_##name##QueueCB =                                   \
+{                                                                       \
+    s_##name##QueueBuff,                                                \
+    0,                                                                  \
+    len,                                                                \
+    msgsize + sizeof (UINT32),                                          \
+    0,                                                                  \
+    0,                                                                  \
+    0,                                                                  \
+    { 0, len },                                                         \
+    {                                                                   \
+        {                                                               \
+            &s_##name##QueueCB.stReadWriteList [0],                     \
+            &s_##name##QueueCB.stReadWriteList [0]                      \
+        },                                                              \
+        {                                                               \
+            &s_##name##QueueCB.stReadWriteList [1],                     \
+            &s_##name##QueueCB.stReadWriteList [1]                      \
+        }                                                               \
+    },                                                                  \
+    {                                                                   \
+        &s_##name##QueueCB.stMemList,                                   \
+        &s_##name##QueueCB.stMemList                                    \
+    }                                                                   \
+}
+
+/**
+  *  @ingroup los_queue
+  *  Initialize a queue defined statically.
+  */
+#define LOS_QUEUE_INIT(name, phandle)                                   \
+    LOS_StaticQueueInit (&s_##name##QueueCB, phandle)
+
+#endif
+
 /* queue state */
 /**
   *  @ingroup los_queue
@@ -120,14 +164,21 @@ typedef struct tagQueueCB
   *  @ingroup los_queue
   *  Queue information control block
   */
+#if (LOSCFG_STATIC_QUEUE == NO)
 extern QUEUE_CB_S *g_pstAllQueue;
+#else
+extern QUEUE_CB_S *g_apstAllQueue[LOSCFG_BASE_IPC_QUEUE_LIMIT];
+#endif
 
 /**
   *  @ingroup los_queue
   *  Obtain a handle of the queue that has a specified ID.
   */
-#define GET_QUEUE_HANDLE(QueueID)       (((QUEUE_CB_S *)g_pstAllQueue) + (QueueID))
-
+#if (LOSCFG_STATIC_QUEUE == NO)
+#define GET_QUEUE_HANDLE(QueueID)       (&g_pstAllQueue[QueueID])
+#else
+#define GET_QUEUE_HANDLE(QueueID)       (g_apstAllQueue[QueueID])
+#endif
 /**
   *  @ingroup los_queue
   * Obtain the head node in a queue doubly linked list.

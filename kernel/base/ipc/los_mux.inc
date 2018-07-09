@@ -54,7 +54,12 @@ extern "C"{
  * @ingroup los_mux
  * Mutex global array address, which can be obtained by using a handle ID.
  */
-extern MUX_CB_S *g_pstAllMux;
+
+#if (LOSCFG_STATIC_MUX == NO)
+extern MUX_CB_S             *g_pstAllMux;
+#else
+extern MUX_CB_S             *g_apstAllMux[LOSCFG_BASE_IPC_MUX_LIMIT];
+#endif
 
 
 #ifdef __cplusplus

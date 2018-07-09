@@ -114,12 +114,17 @@ LITE_OS_SEC_TEXT_INIT VOID *osTskStackInit(UINT32 uwTaskID, UINT32 uwStackSize, 
 {
     TSK_CONTEXT_S  *pstContext;
 
+#if (LOSCFG_STATIC_TASK == NO)
+
     /*initialize the task stack, write magic num to stack top*/
     memset(pTopStack, OS_TASK_STACK_INIT, uwStackSize);
     *((UINT32 *)(pTopStack)) = OS_TASK_MAGIC_WORD;
 
+#endif
+
     pstContext    = (TSK_CONTEXT_S *)(((UINT32)pTopStack + uwStackSize) - sizeof(TSK_CONTEXT_S));
 
+#if (LOSCFG_STATIC_TASK == NO)
     pstContext->uwR4  = 0x04040404L;
     pstContext->uwR5  = 0x05050505L;
     pstContext->uwR6  = 0x06060606L;
@@ -130,6 +135,12 @@ LITE_OS_SEC_TEXT_INIT VOID *osTskStackInit(UINT32 uwTaskID, UINT32 uwStackSize, 
     pstContext->uwR11 = 0x11111111L;
     /* The initial interruption state(PRIMASK value: 0 --- enable) of the task */
     pstContext->uwPriMask = 0;
+    pstContext->uwR1  = 0x01010101L;
+    pstContext->uwR2  = 0x02020202L;
+    pstContext->uwR3  = 0x03030303L;
+    pstContext->uwR12 = 0x12121212L;
+#endif
+
 #if FPU_EXIST
     /**
      * The initial EXC_RETURN value(use 8 word stack frame, return to thread mode and use PSP).
@@ -137,11 +148,8 @@ LITE_OS_SEC_TEXT_INIT VOID *osTskStackInit(UINT32 uwTaskID, UINT32 uwStackSize, 
      */
     pstContext->uwExcReturn = 0xFFFFFFFD;
 #endif
+
     pstContext->uwR0  = uwTaskID;
-    pstContext->uwR1  = 0x01010101L;
-    pstContext->uwR2  = 0x02020202L;
-    pstContext->uwR3  = 0x03030303L;
-    pstContext->uwR12 = 0x12121212L;
     pstContext->uwLR  = (UINT32)osTaskExit;
     pstContext->uwPC  = (UINT32)osTaskEntry;
     pstContext->uwxPSR = 0x01000000L;

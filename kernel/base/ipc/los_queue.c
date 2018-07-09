@@ -49,9 +49,14 @@ extern "C"{
 
 #if (LOSCFG_BASE_IPC_QUEUE == YES)
 
+#if (LOSCFG_STATIC_QUEUE == NO)
 /*lint -save -e64*/
 LITE_OS_SEC_BSS      QUEUE_CB_S       *g_pstAllQueue;
 LITE_OS_SEC_BSS      LOS_DL_LIST      g_stFreeQueueList;
+#else
+LITE_OS_SEC_BSS      QUEUE_CB_S       *g_apstAllQueue[LOSCFG_BASE_IPC_QUEUE_LIMIT];
+#endif
+
 #if ((LOSCFG_PLATFORM_EXC == YES) && (LOSCFG_SAVE_EXC_INFO == YES))
 LITE_OS_SEC_BSS      UINT32           g_uwExcQueueMaxNum;
 #endif
@@ -65,6 +70,7 @@ LITE_OS_SEC_BSS      UINT32           g_uwExcQueueMaxNum;
 **************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 osQueueInit(VOID)
 {
+#if (LOSCFG_STATIC_QUEUE == NO)
     QUEUE_CB_S *pstQueueNode;
     UINT16   usIndex;
 
@@ -94,8 +100,12 @@ LITE_OS_SEC_TEXT_INIT UINT32 osQueueInit(VOID)
     osExcRegister(OS_EXC_TYPE_QUE, (EXC_INFO_SAVE_CALLBACK)LOS_QueueInfoGet, &g_uwExcQueueMaxNum);
 #endif
 
+#endif
+
     return LOS_OK;
 }
+
+#if (LOSCFG_STATIC_QUEUE == NO)
 
 /*****************************************************************************
  Function    : LOS_QueueCreate
@@ -173,6 +183,44 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_QueueCreate(CHAR *pcQueueName,
 
     return LOS_OK;
 }
+#else
+/*****************************************************************************
+ Function    : LOS_StaticQueueInit
+ Description : Initialize a task defined statically.
+ Input       : pvQueueCB  --- the queue control block to be initialized
+ Output      : puwQueueID --- Queue ID
+ Return      : LOS_OK on success or error code on failure
+ *****************************************************************************/
+LITE_OS_SEC_TEXT_INIT UINT32 LOS_StaticQueueInit (void * pvQueueCB, UINT32 * puwQueueID)
+{
+    static UINT32 s_uwQueueID = 0;
+    QUEUE_CB_S * pstQueueCB = (QUEUE_CB_S *) pvQueueCB;
+    UINT32 ret = LOS_OK;
+    UINTPTR uvIntSave;
+
+    uvIntSave = LOS_IntLock();
+
+    if (s_uwQueueID < LOSCFG_BASE_IPC_QUEUE_LIMIT)
+    {
+        g_apstAllQueue [s_uwQueueID] = pstQueueCB;
+
+        pstQueueCB->usQueueState = OS_QUEUE_INUSED;
+        pstQueueCB->usQueueID = s_uwQueueID;
+        *puwQueueID = s_uwQueueID;
+
+        s_uwQueueID++;
+    }
+    else
+    {
+        ret = LOS_ERRNO_QUEUE_CB_UNAVAILABLE;
+    }
+
+    LOS_IntRestore(uvIntSave);
+
+    return ret;
+}
+
+#endif
 
 LITE_OS_SEC_TEXT static INLINE UINT32 osQueueReadParameterCheck(UINT32 uwQueueID, VOID *pBufferAddr, UINT32 *puwBufferSize, UINT32 uwTimeOut)
 {
@@ -661,6 +709,8 @@ LITE_OS_SEC_TEXT UINT32 osQueueMailFree(UINT32  uwQueueID, VOID* pMailPool, VOID
     return LOS_OK;
 }
 
+#if (LOSCFG_STATIC_QUEUE == NO)
+
 /*****************************************************************************
  Function    : LOS_QueueDelete
  Description : Delete a queue
@@ -725,6 +775,8 @@ QUEUE_END:
     LOS_IntRestore(uvIntSave);
     return uwRet;
 }
+
+#endif
 
 /*****************************************************************************
  Function    : LOS_QueueInfoGet
