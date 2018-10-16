@@ -63,11 +63,14 @@ void task2 (void)
     LOS_DO_PRIVILEDGED ((*p)++);
 
     while (1)
+    {
+        malloc (1);
 #if 1
         LOS_DO_PRIVILEDGED(c222++);
 #else
         c222++;
 #endif
+    }
 }
 
 UINT32 creat_main_task()
@@ -78,6 +81,7 @@ UINT32 creat_main_task()
 #if LOSCFG_ENABLE_MPU == YES
     LOS_MPU_PARA mpuPara [MPU_NR_USR_ENTRIES];
 #endif
+
     task_init_param.usTaskPrio = 1;
     task_init_param.pcName = "t1";
     task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)task1;
@@ -102,6 +106,7 @@ UINT32 creat_main_task()
     mpuPara [0].uwRegionSize = 256;
     mpuPara[0].uwRegionAttr = MPU_ATTR_RW_RW | MPU_ATTR_WB | MPU_ATTR_EN;
 #endif
+    task_init_param.uwHeapSize = 0x123;
     task_init_param.pRegions = mpuPara;
 #endif
 #endif

@@ -46,6 +46,7 @@
     IF :DEF:LOSCFG_ENABLE_MPU
     EXPORT  osEnterPrivileged
     EXPORT  osExitPrivileged
+    EXPORT  osIsPrivileged
     ENDIF
 
 ;****************************************************************************************
@@ -84,7 +85,7 @@ OS_TASK_STATUS_RUNNING        EQU    0x0010      ; Task Status Flag (RUNNING).
 ;        Start the first task, which is the highest priority task in the priority queue.
 ;        Other tasks are started by task scheduling.
 ;****************************************************************************************
-LOS_StartToRun
+LOS_StartToRun PROC
     CPSID   I
 
     ;/**
@@ -186,6 +187,7 @@ LOS_StartToRun
     ; * of the main function will be destroyed and will never be returned.
     ; */
     BX      R6
+    ENDP
 
 ;****************************************************************************************
 ; Function:
@@ -200,19 +202,22 @@ LOS_StartToRun
 ;        Restore the locked interruption of LOS_IntLock.
 ;        The caller must pass in the value of interruption state previously saved.
 ;****************************************************************************************
-LOS_IntLock
+LOS_IntLock PROC
     MRS     R0, PRIMASK
     CPSID   I
     BX      LR
+    ENDP
 
-LOS_IntUnLock
+LOS_IntUnLock PROC
     MRS     R0, PRIMASK
     CPSIE   I
     BX      LR
+    ENDP
 
-LOS_IntRestore
+LOS_IntRestore PROC
     MSR     PRIMASK, R0
     BX      LR
+    ENDP
 
 ;****************************************************************************************
 ; Function:
@@ -220,11 +225,12 @@ LOS_IntRestore
 ; Description:
 ;        Start the task swtich process by software trigger PendSV interrupt.
 ;****************************************************************************************
-osTaskSchedule
+osTaskSchedule PROC
     LDR     R0, =OS_NVIC_INT_CTRL
     LDR     R1, =OS_NVIC_PENDSVSET
     STR     R1, [R0]
     BX      LR
+    ENDP
 
 ;****************************************************************************************
 ; Function:
@@ -236,7 +242,7 @@ osTaskSchedule
 ;        Second: Restore the context of the next running task(g_stLosTask.pstNewTask)
 ;                from its own stack.
 ;****************************************************************************************
-PendSV_Handler
+PendSV_Handler PROC
     ;/**
     ; * R12: Save the interruption state of the current running task.
     ; * Disable all interrupts except Reset,NMI and HardFault
@@ -417,9 +423,11 @@ TaskSwitch
     ; */
     MSR     PRIMASK, R12
     BX      LR
+    ENDP
 
     IF :DEF:LOSCFG_ENABLE_MPU
-osEnterPrivileged
+
+osEnterPrivileged PROC
     MRS     R0, CONTROL
     TST     R0, #1
     BEQ     %F0
@@ -430,8 +438,9 @@ osEnterPrivileged
     SVC     #0
 0
     BX      LR
+    ENDP
 
-osExitPrivileged
+osExitPrivileged PROC
     TST     R0, #1
     BEQ     %F0
 
@@ -440,6 +449,14 @@ osExitPrivileged
     MSR     CONTROL, R0
 0
     BX      LR
+    ENDP
+
+osIsPrivileged PROC
+    MRS     R0, CONTROL
+    AND     R0, R0, #1
+    BX      LR
+    ENDP
+
     ENDIF
 
     ALIGN

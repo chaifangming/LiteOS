@@ -275,6 +275,7 @@ typedef struct tagTaskCB
     UINT16                      usPriority;
 #if (LOSCFG_ENABLE_MPU == YES)
     VOID                        *pMpuSettings;              /**< address space id            */
+    VOID                        *pPool;                     /**< per-task heap               */
 #endif
     UINT32                      uwStackSize;                /**< Task stack size             */
     UINT32                      uwTopOfStack;               /**< Task stack top              */

@@ -415,15 +415,16 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINT32 uwArg);
  */
 typedef struct tagTskInitParam
 {
-    TSK_ENTRY_FUNC       pfnTaskEntry;              /**< Task entrance function                 */
-    UINT16               usTaskPrio;                /**< Task priority                          */
-    UINT32               uwArg;                     /**< Task parameters                        */
-    UINT32               uwStackSize;               /**< Task stack size                        */
-    CHAR                 *pcName;                   /**< Task name                              */
+    TSK_ENTRY_FUNC      pfnTaskEntry;               /**< Task entrance function         */
+    UINT16              usTaskPrio;                 /**< Task priority                  */
+    UINT32              uwArg;                      /**< Task parameters                */
+    UINT32              uwStackSize;                /**< Task stack size                */
+    CHAR                *pcName;                    /**< Task name                      */
 #if (LOSCFG_ENABLE_MPU == YES)
+    UINT32              uwHeapSize;                 /**< heap size used by this task    */
     VOID                *pRegions;
 #endif
-    UINT32               uwResved;                  /**< Reserved                               */
+    UINT32              uwResved;                   /**< Reserved                       */
 } TSK_INIT_PARAM_S;
 
 /**

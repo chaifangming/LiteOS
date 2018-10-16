@@ -45,17 +45,13 @@
 #include "los_memstat.inc"
 #endif
 
-LITE_OS_SEC_DATA_INIT static UINT32 g_uwAllocCount = 0;
-LITE_OS_SEC_DATA_INIT static UINT32 g_uwFreeCount = 0;
-
-#if (LOSCFG_HEAP_MEMORY_PEAK_STATISTICS == YES)
-LITE_OS_SEC_DATA_INIT static UINT32 g_uwCurHeapUsed = 0;
-LITE_OS_SEC_DATA_INIT static UINT32 g_uwMaxHeapUsed = 0;
-#endif
-
 #define HEAP_CAST(t, exp) ((t)(exp))
 #define HEAP_ALIGN 4
 #define ALIGNE(sz) (sz + HEAP_ALIGN - 1) & ~(HEAP_ALIGN - 1)
+
+#if (LOSCFG_ENABLE_MPU == YES)
+extern BOOL osIsPrivileged(void);
+#endif
 
 /*****************************************************************************
  Function : osHeapPrvGetNext
@@ -122,7 +118,12 @@ LITE_OS_SEC_TEXT VOID* osHeapAlloc(VOID *pPool, UINT32 uwSz)
         return NULL;
     }
 
-    uvIntSave = LOS_IntLock();
+#if (LOSCFG_ENABLE_MPU == YES)
+    if (!osIsPrivileged ())
+#endif
+    {
+        uvIntSave = LOS_IntLock();
+    }
 
     uwSz = ALIGNE(uwSz);
     pstNode = pstHeapMan->pstTail;
@@ -178,20 +179,23 @@ SIZE_MATCH:
 #endif
 
 #if (LOSCFG_HEAP_MEMORY_PEAK_STATISTICS == YES)
-    g_uwCurHeapUsed += (uwSz + sizeof(struct LOS_HEAP_NODE));
-    if(g_uwCurHeapUsed > g_uwMaxHeapUsed)
+    pstHeapMan->uwCurHeapUsed += (uwSz + sizeof(struct LOS_HEAP_NODE));
+    if(pstHeapMan->uwCurHeapUsed > pstHeapMan->uwMaxHeapUsed)
     {
-        g_uwMaxHeapUsed = g_uwCurHeapUsed;
+        pstHeapMan->uwMaxHeapUsed = pstHeapMan->uwCurHeapUsed;
     }
 #endif
 
-    g_uwAllocCount++;
+    pstHeapMan->uwAllocCount++;
 
 out:
     if (pstHeapMan->pstTail->uwSize < 1024)
         osAlarmHeapInfo(pstHeapMan);
 
-    LOS_IntRestore(uvIntSave);
+#if (LOSCFG_ENABLE_MPU == YES)
+    if (!osIsPrivileged ())
+#endif
+        LOS_IntRestore(uvIntSave);
 
     return pRet;
 }
@@ -275,7 +279,10 @@ LITE_OS_SEC_TEXT BOOL osHeapFree(VOID *pPool, VOID* pPtr)
         return FALSE;
     }
 
-    uvIntSave = LOS_IntLock();
+#if (LOSCFG_ENABLE_MPU == YES)
+    if (!osIsPrivileged ())
+#endif
+        uvIntSave = LOS_IntLock();
 
     pstNode = ((struct LOS_HEAP_NODE*)pPtr) - 1;
 
@@ -297,9 +304,9 @@ LITE_OS_SEC_TEXT BOOL osHeapFree(VOID *pPool, VOID* pPtr)
 #endif
 
 #if (LOSCFG_HEAP_MEMORY_PEAK_STATISTICS == YES)
-    if (g_uwCurHeapUsed >= (pstNode->uwSize + sizeof(struct LOS_HEAP_NODE)))
+    if (pstHeapMan->uwCurHeapUsed >= (pstNode->uwSize + sizeof(struct LOS_HEAP_NODE)))
     {
-        g_uwCurHeapUsed -= (pstNode->uwSize + sizeof(struct LOS_HEAP_NODE));
+        pstHeapMan->uwCurHeapUsed -= (pstNode->uwSize + sizeof(struct LOS_HEAP_NODE));
     }
 #endif
 
@@ -317,10 +324,14 @@ LITE_OS_SEC_TEXT BOOL osHeapFree(VOID *pPool, VOID* pPtr)
     if ((pstT = osHeapPrvGetNext(pstHeapMan, pstNode)) != NULL)
         pstT->pstPrev = pstNode;
 
-    g_uwFreeCount++;
+    pstHeapMan->uwFreeCount++;
 
 out:
-    LOS_IntRestore(uvIntSave);
+
+#if (LOSCFG_ENABLE_MPU == YES)
+    if (!osIsPrivileged ())
+#endif
+        LOS_IntRestore(uvIntSave);
 
     return bRet;
 }
@@ -371,16 +382,18 @@ LITE_OS_SEC_TEXT_MINOR UINT32 osHeapStatisticsGet(VOID *pPool, LOS_HEAP_STATUS *
     pstStatus->usedSize    = uwHeapUsed;
     pstStatus->totalSize   = pstRamHeap->uwSize;
     pstStatus->freeSize    = pstStatus->totalSize - pstStatus->usedSize;
-    pstStatus->allocCount  = g_uwAllocCount;
-    pstStatus->freeCount   = g_uwFreeCount;
+    pstStatus->allocCount  = pstRamHeap->uwAllocCount;
+    pstStatus->freeCount   = pstRamHeap->uwFreeCount;
 
     return LOS_OK;
 }
 
 #if (LOSCFG_HEAP_MEMORY_PEAK_STATISTICS == YES)
-LITE_OS_SEC_TEXT_MINOR UINT32 osHeapGetHeapMemoryPeak(VOID)
+LITE_OS_SEC_TEXT_MINOR UINT32 osHeapGetHeapMemoryPeak(VOID *pPool)
 {
-    return g_uwMaxHeapUsed;
+    struct LOS_HEAP_MANAGER *pstHeapMan = HEAP_CAST(struct LOS_HEAP_MANAGER *, pPool);
+
+    return pstHeapMan->uwMaxHeapUsed;
 }
 #endif
 

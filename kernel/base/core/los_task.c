@@ -1617,6 +1617,24 @@ LITE_OS_SEC_TEXT VOID osTaskSwitchImpurePtr(VOID)
 }
 #endif
 
+#if (LOSCFG_ENABLE_MPU == YES)
+/*****************************************************************************
+ Function : osTaskHeapGet
+ Description : get the heap of current task.
+ Input       : None
+ Output      : None
+ Return      : None
+ *****************************************************************************/
+LITE_OS_SEC_TEXT VOID *osTaskHeapGet(VOID)
+{
+    VOID * pPool;
+
+    LOS_DO_PRIVILEDGED(pPool = g_stLosTask.pstRunTask->pPool);
+
+    return pPool;
+}
+#endif
+
 #ifdef __cplusplus
 #if __cplusplus
 }

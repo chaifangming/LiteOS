@@ -45,6 +45,26 @@
 #error "macro LOS_LIBC_MALLOC_ALIGN_SIZE undefined"
 #endif
 
+#if (LOSCFG_ENABLE_MPU == YES)
+extern void *osTaskHeapGet(void);
+#endif
+
+static inline void *__get_heap(void)
+{
+    void *heap;
+
+#if (LOSCFG_ENABLE_MPU == YES)
+
+    heap = osTaskHeapGet();
+
+    if (heap == NULL)
+#endif
+    {
+        heap = (void *)OS_SYS_MEM_ADDR;
+    }
+
+    return heap;
+}
 
 /*****************************************************************************
 Function         :      free
@@ -62,9 +82,8 @@ void free(void *ptr)
     if (ptr == NULL)
         return;
 
-    LOS_MemFree((void *)OS_SYS_MEM_ADDR, ptr);/*lint !e534*/
+    LOS_MemFree(__get_heap(), ptr);/*lint !e534*/
 }
-
 
 /*****************************************************************************
 Function         :      malloc
@@ -83,9 +102,9 @@ void *malloc(size_t size) /*lint !e31 !e10*/
         return NULL; /*lint !e64*/
 
 #if defined(LOS_LIBC_MALLOC_ALIGN)
-    ptr = LOS_MemAllocAlign((void *)OS_SYS_MEM_ADDR, (UINT32)size, LOS_LIBC_MALLOC_ALIGN_SIZE);
+    ptr = LOS_MemAllocAlign(__get_heap(), (UINT32)size, LOS_LIBC_MALLOC_ALIGN_SIZE);
 #else
-    ptr = LOS_MemAlloc((void *)OS_SYS_MEM_ADDR, (UINT32)size);
+    ptr = LOS_MemAlloc(__get_heap(), (UINT32)size);
 #endif
 
     return ptr;
@@ -142,7 +161,7 @@ void *memalign (size_t boundary, size_t size)  /*lint !e18 !e578*/
     if(size == 0)
         return NULL; /*lint !e64*/
 
-    ptr = LOS_MemAllocAlign((void *)OS_SYS_MEM_ADDR, (UINT32)size, (UINT32)boundary);
+    ptr = LOS_MemAllocAlign(__get_heap(), (UINT32)size, (UINT32)boundary);
 
     return ptr; /*lint !e64*/
 }
@@ -181,9 +200,8 @@ void *realloc(void *ptr, size_t size)
         return NULL;
     }
 
-    return LOS_MemRealloc((void *)OS_SYS_MEM_ADDR, (void *)ptr, (UINT32)size);
+    return LOS_MemRealloc(__get_heap(), (void *)ptr, (UINT32)size);
 }
-
 
 #if OS_SYS_NOCACHEMEM_SIZE
 /*****************************************************************************
