@@ -80,6 +80,9 @@ extern "C" {
  */
 typedef struct tagTskContext
 {
+#if (LOSCFG_ENABLE_MPU == YES)
+    UINT32 uwControl;
+#endif
     UINT32 uwR4;
     UINT32 uwR5;
     UINT32 uwR6;
@@ -114,9 +117,8 @@ typedef struct tagTskContext
  * @attention:
  * <ul><li>None.</li></ul>
  *
- * @param  uwTaskID     [IN] Type#UINT32: TaskID.
- * @param  uwStackSize  [IN] Type#UINT32: Total size of the stack.
- * @param  pTopStack    [IN] Type#VOID *: Top of task's stack.
+ * @param  pstTaskCB    [IN] Type#LOS_TASK_CB: TCB.
+ * @param  pstInitParam [IN] Type  #TSK_INIT_PARAM_S * Parameter for task creation.
  *
  * @retval: pstContext Type#TSK_CONTEXT_S *.
  * @par Dependency:
@@ -124,9 +126,7 @@ typedef struct tagTskContext
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-extern VOID * osTskStackInit(UINT32 uwTaskID, UINT32 uwStackSize, VOID *pTopStack);
-
-
+extern VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM_S *pstInitParam);
 
 /**
  * @ingroup  los_hw

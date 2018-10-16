@@ -43,6 +43,11 @@
     EXPORT  osTaskSchedule
     EXPORT  PendSV_Handler
 
+    IF :DEF:LOSCFG_ENABLE_MPU
+    EXPORT  osEnterPrivileged
+    EXPORT  osExitPrivileged
+    ENDIF
+
 ;****************************************************************************************
 ;                                  EXTERN PARAMETERS
 ;****************************************************************************************
@@ -133,7 +138,33 @@ LOS_StartToRun
     ; *                                        Stack pointer after LOS_StartToRun--->|
     ; */
     LDR     R12, [R1]
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+
+    ;/**
+    ; * Set the CONTROL register
+    ; */
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    LDR     R0, [R1, #8]           ; TCB->pMpuSettings
+    CMP     R0, #0
+    BEQ     %F1
+    LDR     R1, =0xe000ed9c
+    MOV     R4, #6                 ; 6 regions
+0
+    LDM     R0!, {R2, R3}
+    STM     R1, {R2, R3}
+    SUBS    R4, R4, #1
+    BNE     %B0
+1
+    LDR     R0, [R12], #4
+    MSR     CONTROL, R0
+    ;ADD     R12, R12, #4
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
+
     ADD     R12, R12, #36          ; skip R4-R11, PRIMASK.
+
     IF      {FPU} != "SoftVFP"
     ADD     R12, R12, #4           ; if FPU exist, skip EXC_RETURN.
     ENDIF
@@ -143,12 +174,6 @@ LOS_StartToRun
     ; * Set the stack pointer of g_stLosTask.pstRunTask to PSP.
     ; */
     MSR     PSP, R12
-
-    ;/**
-    ; * Set the CONTROL register, after schedule start, privilege level and stack = PSP.
-    ; */
-    MOV     R12, #2
-    MSR     CONTROL, R12
 
     ;/**
     ; * Enable interrupt. (The default PRIMASK value is 0, so enable directly)
@@ -267,7 +292,15 @@ TaskSwitch
     VSTMDBEQ  R0!, {D8-D15}
     STMFD   R0!, {R14}             ; save EXC_RETURN.
     ENDIF
+
     STMFD   R0!, {R4-R12}          ; save the core registers and PRIMASK.
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    MRS     R1, CONTROL
+    STR     R1, [R0, #-4]!
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
 
     ;/**
     ; * R5,R8.
@@ -311,6 +344,28 @@ TaskSwitch
     ; */
     LDR     R1, [R0]
 
+    IF :DEF:LOSCFG_ENABLE_MPU
+    ;/**
+    ; * Set the CONTROL register
+    ; */
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    LDR     R4, [R0, #8]           ; TCB->pMpuSettings
+    CMP     R4, #0
+    BEQ     %F1
+    LDR     R5, =0xe000ed9c
+    MOV     R6, #6                 ; 6 regions, cortex-m0+ do not have alias reg
+0
+    LDM     R4!, {R2, R3}
+    STM     R5, {R2, R3}
+    SUBS    R6, R6, #1
+    BNE     %B0
+1
+    LDR     R4, [R1], #4
+    MSR     CONTROL, R4
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
+
     ;/**
     ; * Restore the stack frame(R4-R11,[S16-S31]) of the next running task.
     ; * R12 restore the PRIMASK value of the next running task.
@@ -344,6 +399,7 @@ TaskSwitch
     ; *                                     Stack pointer after exiting exception--->|
     ; */
     LDMFD   R1!, {R4-R12}          ; restore the core registers and PRIMASK.
+
     IF      {FPU} != "SoftVFP"     ; if FPU exist.
     LDMFD   R1!, {R14}             ; restore EXC_RETURN.
     TST     R14, #0x10             ; if the task using the FPU context, pop s16-s31.
@@ -361,6 +417,30 @@ TaskSwitch
     ; */
     MSR     PRIMASK, R12
     BX      LR
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+osEnterPrivileged
+    MRS     R0, CONTROL
+    TST     R0, #1
+    BEQ     %F0
+
+    MOV     R1, #0x5a   ; magic
+    MOV     R12, R1     ; SVC# is saved in R12, #1 = enter privileged
+
+    SVC     #0
+0
+    BX      LR
+
+osExitPrivileged
+    TST     R0, #1
+    BEQ     %F0
+
+    MRS     R0, CONTROL
+    ORR     R0, R0, #1
+    MSR     CONTROL, R0
+0
+    BX      LR
+    ENDIF
 
     ALIGN
     END

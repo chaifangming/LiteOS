@@ -43,6 +43,11 @@
     EXPORT  osTaskSchedule
     EXPORT  PendSV_Handler
 
+    IF :DEF:LOSCFG_ENABLE_MPU
+    EXPORT  osEnterPrivileged
+    EXPORT  osExitPrivileged
+    ENDIF
+
 ;****************************************************************************************
 ;                                  EXTERN PARAMETERS
 ;****************************************************************************************
@@ -147,6 +152,27 @@ LOS_StartToRun
     ; *                                    Stack pointer after LOS_StartToRun--->|
     ; */
     LDR     R3, [R1]
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    LDR     R0, [R1, #8]           ; TCB->pMpuSettings
+    CMP     R0, #0
+    BEQ     %F1
+    LDR     R1, =0xe000ed9c
+    MOVS    R4, #6                 ; 6 regions
+0
+    LDM     R0!, {R2, R4}
+    STR     R2, [r1]
+    STR     R4, [r1, #4]
+    SUBS    R4, R4, #1
+    BNE     %B0
+1
+    LDR     R0, [R3]
+    MSR     CONTROL, R0
+    ADDS    R3, R3, #4
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
+
     ADDS    R3, R3, #36            ; skip R4-R11, PRIMASK.
 
     LDMFD   R3!, {R0-R2}           ; restore R0-R2.
@@ -278,6 +304,14 @@ TaskSwitch
     STMIA   R0!, {R3-R7}           ; save R8-R12.
     SUBS    R0, #36
 
+    IF :DEF:LOSCFG_ENABLE_MPU
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    SUBS    R0, R0, #4
+    MRS     R1, CONTROL
+    STR     R1, [R0]
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
+
     ;/**
     ; * R5,R3.
     ; */
@@ -319,6 +353,26 @@ TaskSwitch
     ; * (R1 = g_stLosTask.pstNewTask->pStackPointer)
     ; */
     LDR     R1, [R0]
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    LDR     R4, [R0, #8]           ; TCB->pMpuSettings
+    CMP     R4, #0
+    BEQ     %F1
+    LDR     R5, =0xe000ed9c
+    MOVS    R6, #6                 ; 6 regions, cortex-m0+ do not have alias reg
+0
+    LDM     R4!, {R2, R3}
+    STR     R2, [R5]
+    STR     R3, [R5, #4]
+    SUBS    R6, R6, #1
+    BNE     %B0
+1
+    LDR     R4, [R1]
+    ADDS    R1, R1, #4
+    MSR     CONTROL, R4
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ENDIF
 
     ;/**
     ; * Restore the stack frame(R4-R11) of the next running task.
@@ -371,6 +425,48 @@ TaskSwitch
     ; */
     MSR     PRIMASK, R12
     BX      LR
+
+    IF :DEF:LOSCFG_ENABLE_MPU
+    EXPORT  SVC_Handler
+SVC_Handler PROC
+    MRS     R0, PSP
+    LDR     R1, [R0]           ; get the previous PSR in R0
+    CMP     R1, #3
+    BNE     %F0
+    LDR     R1, [R0, #0x10]    ; get the magic in R12
+    CMP     R1, #0x5a
+    BNE     %F0
+
+    MOVS    R0, #2
+    MSR     CONTROL, R0
+0
+    BX      LR
+
+osEnterPrivileged
+    MRS     R0, CONTROL
+    MOVS    R1, #1
+    TST     R0, R1
+    BEQ     %F0
+
+    MOVS    R1, #0x5a   ; magic
+    MOV     R12, R1     ; SVC# is saved in R12, #1 = enter privileged
+
+    SVC     #0
+0
+    BX      LR
+
+osExitPrivileged
+    MOVS    R1, #1
+    TST     R0, R1
+    BEQ     %F0
+
+    MRS     R0, CONTROL
+    ADDS    R0, R0, #1
+    MSR     CONTROL, R0
+
+0
+    BX      LR
+    ENDIF
 
     ALIGN
     END

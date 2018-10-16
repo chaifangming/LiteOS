@@ -49,6 +49,9 @@
 #include "los_cpup.ph"
 #endif
 #include "los_hw.h"
+#if (LOSCFG_ENABLE_MPU == YES)
+#include "los_mpu.h"
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -695,11 +698,30 @@ LITE_OS_SEC_TEXT_INIT VOID osTaskEntry(UINT32 uwTaskID)
 {
     LOS_TASK_CB *pstTaskCB;
 
+#if (LOSCFG_ENABLE_MPU == YES)
+    TSK_ENTRY_FUNC entry;
+    UINT32 arg;
+    UINT32 flags = osEnterPrivileged();
+
+    OS_TASK_ID_CHECK(uwTaskID);
+
+    pstTaskCB = OS_TCB_FROM_TID(uwTaskID);
+
+    entry = pstTaskCB->pfnTaskEntry;
+    arg   = pstTaskCB->uwArg;
+
+    osExitPrivileged(flags);
+
+    (VOID)entry(arg);
+
+    flags = osEnterPrivileged();
+#else
     OS_TASK_ID_CHECK(uwTaskID);
 
     pstTaskCB = OS_TCB_FROM_TID(uwTaskID);
 
     (VOID)pstTaskCB->pfnTaskEntry(pstTaskCB->uwArg);
+#endif
 
     g_usLosTaskLock = 0;
     (VOID)LOS_TaskDelete(pstTaskCB->uwTaskID);
@@ -789,7 +811,8 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *puwTaskID, TSK_INIT_PARA
     (VOID)LOS_IntRestore(uvIntSave);
     uwTaskID = pstTaskCB->uwTaskID;
 
-    pTopStack = (VOID *)LOS_MemAllocAlign(OS_TASK_STACK_ADDR, pstInitParam->uwStackSize, LOSCFG_STACK_POINT_ALIGN_SIZE);
+    extern VOID *osTskStackAlloc (TSK_INIT_PARAM_S *pstInitParam);
+    pTopStack = (VOID *)osTskStackAlloc(pstInitParam);
 
     if (NULL == pTopStack)
     {
@@ -799,8 +822,6 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *puwTaskID, TSK_INIT_PARA
         OS_GOTO_ERREND();
     }
 
-    pStackPtr = osTskStackInit(uwTaskID, pstInitParam->uwStackSize, pTopStack);
-    pstTaskCB->pStackPointer     = pStackPtr;
     pstTaskCB->uwArg             = pstInitParam->uwArg;
     pstTaskCB->uwTopOfStack      = (UINT32)pTopStack;
     pstTaskCB->uwStackSize       = pstInitParam->uwStackSize;
@@ -813,6 +834,9 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskCreateOnly(UINT32 *puwTaskID, TSK_INIT_PARA
     pstTaskCB->uwEventMask       = 0;
     pstTaskCB->pcTaskName        = pstInitParam->pcName;
     pstTaskCB->puwMsg = NULL;
+
+    osTskStackInit(pstTaskCB, pstInitParam);
+
 #if (LOSCFG_LIB_LIBC_NEWLIB_REENT == YES)
     /* Initialise this task's Newlib reent structure. */
     _REENT_INIT_PTR(&(pstTaskCB->stNewLibReent));

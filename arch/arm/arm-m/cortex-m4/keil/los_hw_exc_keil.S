@@ -241,16 +241,18 @@ osHFExcCommonBMU
 ;        SVC Handler.
 ;****************************************************************************************
 SVC_Handler
-    TST   LR, #0x4                     ; EXC_RETURN[b2] --- PSP or MSP
-    ITE   EQ
-    MRSEQ R0, MSP
-    MRSNE R0, PSP
-    LDR   R1, [R0, #24]                ; The PC value in the stack frame
-    LDRB  R0, [R1, #-2]                ; R0: The number of SVC (0 - 255)
-    MOV   R1, #0
-    ;B     osExcDispatch
-_SvcLoop
-    B     _SvcLoop
+    MRS  R0, PSP
+    LDR  R1, [R0]           ; get the previous PSR in R0
+    CMP  R1, #3
+    BNE  %F0
+    LDR  R1, [R0, #0x10]    ; get the magic in R12
+    CMP  R1, #0x5a
+    BNE  %F0
+
+    MOV  R0, #2
+    MSR  CONTROL, R0
+0
+    BX   LR
 
 ;****************************************************************************************
 ; Function:

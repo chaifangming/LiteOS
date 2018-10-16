@@ -42,7 +42,6 @@
 #include "los_base.h"
 #include "los_list.h"
 #include "los_sys.h"
-#include "los_hw.h"
 #include "los_tick.h"
 #include "los_event.h"
 #include "los_err.h"
@@ -416,12 +415,15 @@ typedef VOID *(*TSK_ENTRY_FUNC)(UINT32 uwArg);
  */
 typedef struct tagTskInitParam
 {
-   TSK_ENTRY_FUNC       pfnTaskEntry;               /**< Task entrance function                 */
-   UINT16               usTaskPrio;                 /**< Task priority                          */
-   UINT32               uwArg;                      /**< Task parameters                        */
-   UINT32               uwStackSize;                /**< Task stack size                        */
-   CHAR                 *pcName;                    /**< Task name                              */
-   UINT32               uwResved;                   /**< Reserved                               */
+    TSK_ENTRY_FUNC       pfnTaskEntry;              /**< Task entrance function                 */
+    UINT16               usTaskPrio;                /**< Task priority                          */
+    UINT32               uwArg;                     /**< Task parameters                        */
+    UINT32               uwStackSize;               /**< Task stack size                        */
+    CHAR                 *pcName;                   /**< Task name                              */
+#if (LOSCFG_ENABLE_MPU == YES)
+    VOID                *pRegions;
+#endif
+    UINT32               uwResved;                  /**< Reserved                               */
 } TSK_INIT_PARAM_S;
 
 /**

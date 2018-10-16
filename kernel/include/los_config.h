@@ -741,6 +741,18 @@ extern UINT32 g_sys_mem_addr_end;
 #endif
 #endif
 
+/*=============================================================================
+                                       MPU module configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item for enabling MPU
+ */
+
+#ifndef LOSCFG_ENABLE_MPU
+#define LOSCFG_ENABLE_MPU                                   NO
+#endif
 
 /*=============================================================================
                                        Declaration of Huawei LiteOS module initialization functions
