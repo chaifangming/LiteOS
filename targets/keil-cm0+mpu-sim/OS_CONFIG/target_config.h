@@ -334,7 +334,7 @@ extern UINT32 g_sys_mem_addr_end;
  * @ingroup los_config
  * Configuration module tailoring of more mempry pool checking
  */
-#define LOSCFG_MEM_MUL_POOL                                 YES
+#define LOSCFG_MEM_MUL_POOL                                 NO
 
 /**
  * @ingroup los_config
@@ -416,6 +416,8 @@ extern UINT32 g_sys_mem_addr_end;
 #define LOSCFG_BASE_MISC_TRACK_MAX_COUNT                    1024
 
 #define LOSCFG_ENABLE_MPU                                   YES
+
+#define LOSCFG_STATIC_TASK                                  YES
 
 #ifdef __cplusplus
 #if __cplusplus

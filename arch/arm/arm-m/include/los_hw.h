@@ -46,6 +46,10 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#if (LOSCFG_ENABLE_MPU == YES)
+#include "los_mpu.h"
+#endif
+
 /**
  * @ingroup los_hw
  * The initialization value of stack space.
@@ -105,6 +109,65 @@ typedef struct tagTskContext
     UINT32 uwxPSR;
 } TSK_CONTEXT_S;
 
+#if (LOSCFG_STATIC_TASK == YES)
+
+#define ROUND_UP(n, a)          ((n + (a - 1)) & (a - 1))
+
+/**
+ * @ingroup los_task
+ * Define a task statically.
+ */
+#define LOS_TASK_DEF(name, taskName, entry, taskPrio, arg, stackSize, heapSize,\
+                     regions)                                                  \
+LOS_STATIC_ASSERT (taskPrio <= OS_TASK_PRIORITY_LOWEST);                       \
+LOS_STATIC_ASSERT (taskPrio >= 0);                                             \
+LOS_STATIC_ASSERT ((stackSize & 7) == 0);                                      \
+LOS_STATIC_ASSERT ((heapSize & 7) == 0);                                       \
+enum {                                                                         \
+    s_##name##_ss_0 = stackSize + sizeof (TSK_CONTEXT_S) +                     \
+                      sizeof (LOS_MPU_ENTRY) * (MPU_NR_USR_ENTRIES + 1),       \
+    s_##name##_as_0 = s_##name##_ss_0 + heapSize - 1,                          \
+    s_##name##_as_1 = s_##name##_as_0 | (s_##name##_as_0 >> 1),                \
+    s_##name##_as_2 = s_##name##_as_1 | (s_##name##_as_1 >> 2),                \
+    s_##name##_as_3 = s_##name##_as_2 | (s_##name##_as_2 >> 4),                \
+    s_##name##_as_4 = s_##name##_as_3 | (s_##name##_as_3 >> 8),                \
+    s_##name##_as_5 = s_##name##_as_4 | (s_##name##_as_4 >> 16),               \
+    s_##name##_as_6 = s_##name##_as_5 + 1,                                     \
+    s_##name##_allocSize = s_##name##_as_6 < 256 ? 256 : s_##name##_as_6,      \
+    s_##name##_stackSize = s_##name##_allocSize - heapSize,                    \
+    };                                                                         \
+__ALIGNED (s_##name##_allocSize) static char                                   \
+    s_##sp_##name [s_##name##_allocSize] = {0};                                \
+static LOS_TASK_CB s_##name##CB =                                              \
+{                                                                              \
+    NULL,                                                                      \
+    OS_TASK_STATUS_SUSPEND,                                                    \
+    taskPrio,                                                                  \
+    (VOID *) regions,                                                          \
+    heapSize,                                                                  \
+    heapSize ? s_##sp_##name + (s_##name##_stackSize - heapSize) : NULL,       \
+    s_##name##_stackSize,                                                      \
+    (UINT32) s_##sp_##name,                                                    \
+    0,  /* uwTaskID init later? */                                             \
+    (TSK_ENTRY_FUNC) entry,                                                    \
+    NULL,                                                                      \
+    NULL,                                                                      \
+    arg,                                                                       \
+    taskName,                                                                  \
+    {0},    /* stPendList init later */                                        \
+    {0},    /* stTimerList */                                                  \
+}
+
+extern UINT32 LOS_StaticTaskInit(void *pvTaskCB, UINT32 *puwTaskID);
+
+/**
+ * @ingroup los_task
+ * Initialize statically created tasks.
+ */
+
+#define LOS_TASK_INIT(name, pid)                                               \
+    LOS_StaticTaskInit (((void *) &s_##name##CB), pid)
+#endif
 
 
 /**

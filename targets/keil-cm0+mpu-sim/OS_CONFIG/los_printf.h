@@ -65,7 +65,7 @@ extern "C" {
 
 #define LOS_DEBUG_LEVEL (LOS_INFO_LEVEL + 1)
 
-#define PRINT_LEVEL LOS_ERR_LEVEL
+#define PRINT_LEVEL LOS_EMG_LEVEL
 
 #if PRINT_LEVEL < LOS_DEBUG_LEVEL
 #define PRINT_DEBUG(fmt, args...)

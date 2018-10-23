@@ -37,6 +37,8 @@
 #include "los_hw.h"
 #include "los_priqueue.ph"
 #include "los_mpu.h"
+#include "los_memory.h"
+#include "los_printf.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -114,35 +116,42 @@ LITE_OS_SEC_TEXT_INIT VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM
 {
     TSK_CONTEXT_S  *pstContext;
     char *pTopStack = (char *)pstTaskCB->uwTopOfStack;
-    char *pStack = pTopStack + pstInitParam->uwStackSize;
+    char *pStack = pTopStack + pstTaskCB->uwStackSize;
     int i;
 
 #if (LOSCFG_ENABLE_MPU == YES)
     LOS_MPU_ENTRY * pstMpuSetting = NULL;
+#if (LOSCFG_STATIC_TASK == YES)
+    LOS_MPU_PARA  * pstMpuPara = (LOS_MPU_PARA *)pstTaskCB->pMpuSettings;
+#else
     LOS_MPU_PARA  * pstMpuPara = (LOS_MPU_PARA *)pstInitParam->pRegions;
+#endif
 #endif
 
     /*initialize the task stack, write magic num to stack top*/
-    memset(pTopStack, OS_TASK_STACK_INIT, pstInitParam->uwStackSize);
+    memset(pTopStack, OS_TASK_STACK_INIT, pstTaskCB->uwStackSize);
     *((UINT32 *)(pTopStack)) = OS_TASK_MAGIC_WORD;
 
 #if (LOSCFG_ENABLE_MPU == YES)
 
     if (pstMpuPara != NULL)
     {
-        UINT32 stackRegionBase, stackRegionSize;
+        UINT32 allRegionBase, allRegionSize;
 
         /* per-task heap is only used for unprivileged task */
 
-        pstTaskCB->pPool = NULL;
+#if (LOSCFG_STATIC_TASK == NO)
+        pstTaskCB->uwHeapSize = pstInitParam->uwHeapSize;
+#endif
 
-        if (pstInitParam->uwHeapSize)
+        if (pstTaskCB->uwHeapSize)
         {
             /* the pool address is just the begin of stack, see osTskStackAlloc */
 
-            if (LOS_MemInit(pStack, pstInitParam->uwHeapSize) != LOS_OK)
+            if (LOS_MemInit(pStack, pstTaskCB->uwHeapSize) != LOS_OK)
             {
                 PRINT_ERR("init per task heap fail!\n");
+                pstTaskCB->pPool = NULL;
             }
             else
             {
@@ -163,15 +172,19 @@ LITE_OS_SEC_TEXT_INIT VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM
                 MPU_ATTR_SZ (pstMpuPara[i].uwRegionSize);
         }
 
-        stackRegionBase = pstTaskCB->uwTopOfStack;
-        stackRegionSize = pstTaskCB->uwStackSize + pstInitParam->uwHeapSize;
+        allRegionBase = pstTaskCB->uwTopOfStack;
+        allRegionSize = pstTaskCB->uwStackSize + pstTaskCB->uwHeapSize;
 
         pstMpuSetting [MPU_NR_USR_ENTRIES].uwRegionAddr =
-            stackRegionBase | MPU_RBAR_VALID |
+            allRegionBase | MPU_RBAR_VALID |
             MPU_RBAR_REGION (MPU_NR_USR_ENTRIES + MPU_FIRST_USR_REGION);
         pstMpuSetting [MPU_NR_USR_ENTRIES].uwRegionAttr =
-            MPU_ATTR_RW_RW | MPU_ATTR_SZ (stackRegionSize) | MPU_ATTR_WB |
+            MPU_ATTR_RW_RW | MPU_ATTR_SZ (allRegionSize) | MPU_ATTR_WB |
             MPU_ATTR_EN | MPU_ATTR_XN;
+    }
+    else
+    {
+        pstTaskCB->pPool = NULL;
     }
 
     pstTaskCB->pMpuSettings = (VOID *)pstMpuSetting;
@@ -223,6 +236,7 @@ LITE_OS_SEC_TEXT_INIT VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM
     return;
 }
 
+#if (LOSCFG_STATIC_TASK == NO)
 LITE_OS_SEC_TEXT_INIT VOID *osTskStackAlloc (TSK_INIT_PARAM_S *pstInitParam)
 {
     UINT32 align = LOSCFG_STACK_POINT_ALIGN_SIZE;
@@ -261,14 +275,7 @@ LITE_OS_SEC_TEXT_INIT VOID *osTskStackAlloc (TSK_INIT_PARAM_S *pstInitParam)
             }
         }
 
-        if (pstInitParam->uwHeapSize == 0)
-        {
-            pstInitParam->uwStackSize = alloc;
-        }
-        else
-        {
-            pstInitParam->uwStackSize = alloc - pstInitParam->uwHeapSize;
-        }
+        pstInitParam->uwStackSize = alloc - pstInitParam->uwHeapSize;
 
         align = alloc;
     }
@@ -280,6 +287,7 @@ LITE_OS_SEC_TEXT_INIT VOID *osTskStackAlloc (TSK_INIT_PARAM_S *pstInitParam)
 
     return LOS_MemAllocAlign(OS_TASK_STACK_ADDR, alloc, align);
 }
+#endif
 
 
 LITE_OS_SEC_TEXT_INIT VOID osEnterSleep(VOID)

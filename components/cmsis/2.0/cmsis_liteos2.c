@@ -362,6 +362,7 @@ uint32_t osKernelGetSysTimerFreq (void)
 
 //  ==== Thread Management Functions ====
 
+#if (LOSCFG_STATIC_TASK == NO)
 osThreadId_t osThreadNew (osThreadFunc_t func, void *argument, const osThreadAttr_t *attr)
 {
     UNUSED(argument);
@@ -401,6 +402,7 @@ osThreadId_t osThreadNew (osThreadFunc_t func, void *argument, const osThreadAtt
 
     return (osThreadId_t)pstTaskCB;
 }
+#endif
 
 
 const char *osThreadGetName (osThreadId_t thread_id)

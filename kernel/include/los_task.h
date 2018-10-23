@@ -475,6 +475,10 @@ typedef struct tagTaskSwitchInfo
 }OS_TASK_SWITCH_INFO;
 
 
+#if (LOSCFG_STATIC_TASK == YES)
+UINT32 LOS_StaticTaskInit(void *pvTaskCB, UINT32 *puwTaskID);
+#else
+
 /**
  * @ingroup  los_task
  * @brief Create a task and suspend.
@@ -556,6 +560,8 @@ extern UINT32 LOS_TaskCreateOnly(UINT32 *puwTaskID, TSK_INIT_PARAM_S *pstInitPar
  */
 extern UINT32 LOS_TaskCreate(UINT32 *puwTaskID, TSK_INIT_PARAM_S *pstInitParam);
 
+#endif
+
 /**
  * @ingroup  los_task
  * @brief Resume a task.
@@ -611,6 +617,8 @@ extern UINT32 LOS_TaskResume(UINT32 uwTaskID);
  */
 extern UINT32 LOS_TaskSuspend(UINT32 uwTaskID);
 
+#if (LOSCFG_STATIC_TASK == NO)
+
 /**
  * @ingroup  los_task
  * @brief Delete a task.
@@ -638,6 +646,8 @@ extern UINT32 LOS_TaskSuspend(UINT32 uwTaskID);
  * @since Huawei LiteOS V100R001C00
  */
 extern UINT32 LOS_TaskDelete(UINT32 uwTaskID);
+
+#endif
 
 /**
  * @ingroup  los_task

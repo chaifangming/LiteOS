@@ -741,6 +741,19 @@ extern UINT32 g_sys_mem_addr_end;
 #endif
 #endif
 
+
+/*=============================================================================
+                                       Task statical creation configuration
+=============================================================================*/
+
+/**
+ * @ingroup los_config
+ * Configuration item creating tasks statically.
+ */
+#ifndef LOSCFG_STATIC_TASK
+#define LOSCFG_STATIC_TASK                                  NO
+#endif
+
 /*=============================================================================
                                        MPU module configuration
 =============================================================================*/

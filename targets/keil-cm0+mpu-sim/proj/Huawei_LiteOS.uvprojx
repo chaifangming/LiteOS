@@ -368,7 +368,7 @@
             <TextAddressRange>0x00000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile>.\keil-cm4-sim.sct</ScatterFile>
+            <ScatterFile>.\Huawei_LiteOS.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
             <Misc></Misc>
@@ -382,9 +382,9 @@
           <GroupName>System</GroupName>
           <Files>
             <File>
-              <FileName>startup_MPS_CM4.S</FileName>
+              <FileName>startup.S</FileName>
               <FileType>2</FileType>
-              <FilePath>.\startup_MPS_CM4.S</FilePath>
+              <FilePath>.\startup.S</FilePath>
             </File>
           </Files>
         </Group>
@@ -472,16 +472,6 @@
               <FilePath>..\..\..\kernel\base\ipc\los_sem.c</FilePath>
             </File>
             <File>
-              <FileName>los_heap.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\kernel\base\mem\bestfit_little\los_heap.c</FilePath>
-            </File>
-            <File>
-              <FileName>los_memory.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\kernel\base\mem\bestfit_little\los_memory.c</FilePath>
-            </File>
-            <File>
               <FileName>los_memcheck.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\kernel\base\mem\common\los_memcheck.c</FilePath>
@@ -520,6 +510,16 @@
               <FileName>los_init.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\kernel\los_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>los_heap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\kernel\base\mem\bestfit_little\los_heap.c</FilePath>
+            </File>
+            <File>
+              <FileName>los_memory.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\kernel\base\mem\bestfit_little\los_memory.c</FilePath>
             </File>
           </Files>
         </Group>
