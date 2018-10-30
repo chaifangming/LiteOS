@@ -152,9 +152,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>134</LineNumber>
+          <LineNumber>55</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>2420</Address>
+          <Address>8454</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -163,7 +163,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>..\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\Huawei_LiteOS\../main.c\134</Expression>
+          <Expression>\\Huawei_LiteOS\../main.c\55</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>

@@ -57,16 +57,14 @@ void task1 (void)
 
 void task2 (void)
 {
-    //volatile int * p = 0x20000004;
-
+#if (LOSCFG_ENABLE_MPU == YES)
     LOS_DO_PRIVILEDGED (LOS_TaskDelay (1));
-
-    //LOS_DO_PRIVILEDGED ((*p)++);
+#endif
 
     while (1)
     {
+#if (LOSCFG_ENABLE_MPU == YES)
         malloc (1);
-#if 1
         LOS_DO_PRIVILEDGED(c222++);
 #else
         c222++;
@@ -76,8 +74,13 @@ void task2 (void)
 
 #if (LOSCFG_STATIC_TASK == YES)
 LOS_TASK_DEF (t1, "t1", task1, 0, 1, 0x130, 0, NULL);
+#if (LOSCFG_ENABLE_MPU == YES)
+/* note: const with initial value will be placed in .rodata or .text section */
 static const LOS_MPU_PARA mpuPara [MPU_NR_USR_ENTRIES] = {0,};
 LOS_TASK_DEF (t2, "t2", task2, 0, 1, 0x130, 0x120, (VOID*)mpuPara);
+#else
+LOS_TASK_DEF (t2, "t2", task2, 0, 1, 0x130);
+#endif
 
 UINT32 t1, t2;
 #endif

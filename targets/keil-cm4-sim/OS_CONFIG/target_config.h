@@ -423,6 +423,8 @@ extern UINT32 g_sys_mem_addr_end;
 
 #define LOSCFG_ENABLE_MPU                                   YES
 
+#define LOSCFG_STATIC_TASK                                  YES
+
 #ifdef __cplusplus
 #if __cplusplus
 }
