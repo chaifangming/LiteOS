@@ -32,6 +32,7 @@
  * applicable export control laws and regulations.
  *---------------------------------------------------------------------------*/
 
+#include "los_config.h"
 #include "los_base.h"
 #include "los_task.ph"
 #include "los_hw.h"
@@ -120,6 +121,7 @@ LITE_OS_SEC_TEXT_INIT VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM
     int i;
 
 #if (LOSCFG_ENABLE_MPU == YES)
+    static LOS_MPU_ENTRY astNullMpuSetting [MPU_NR_USR_ENTRIES + 1] = {0};
     LOS_MPU_ENTRY * pstMpuSetting = NULL;
 #if (LOSCFG_STATIC_TASK == YES)
     LOS_MPU_PARA  * pstMpuPara = (LOS_MPU_PARA *)pstTaskCB->pMpuSettings;
@@ -185,6 +187,15 @@ LITE_OS_SEC_TEXT_INIT VOID osTskStackInit(LOS_TASK_CB *pstTaskCB, TSK_INIT_PARAM
     else
     {
         pstTaskCB->pPool = NULL;
+
+        pstMpuSetting = astNullMpuSetting;
+
+        for (i = 0; i < MPU_NR_USR_ENTRIES + 1; i++)
+        {
+            pstMpuSetting [i].uwRegionAddr = 0 |
+                MPU_RBAR_REGION (i + MPU_FIRST_USR_REGION) | MPU_RBAR_VALID;
+            pstMpuSetting [i].uwRegionAttr = 0;
+        }
     }
 
     pstTaskCB->pMpuSettings = (VOID *)pstMpuSetting;

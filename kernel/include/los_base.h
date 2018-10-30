@@ -167,8 +167,8 @@ extern "C" {
 #endif
 /*lint +e40*/
 
-#define LOS_JOIN_AGIN(x,y)      x##Y
-#define LOS_JOIN(x , y)         LOS_JOIN_AGIN(x, y)
+#define LOS_JOIN_AGIN(x,y)      x##y
+#define LOS_JOIN(x, y)          LOS_JOIN_AGIN(x, y)
 
 /**
  * @ingroup los_base

@@ -46,8 +46,14 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
+#include "los_task.ph"
+
 #if (LOSCFG_ENABLE_MPU == YES)
 #include "los_mpu.h"
+#endif
+
+#if (LOSCFG_STATIC_TASK == YES)
+#include "cmsis_compiler.h"
 #endif
 
 /**
@@ -111,6 +117,8 @@ typedef struct tagTskContext
 
 #if (LOSCFG_STATIC_TASK == YES)
 
+#if (LOSCFG_ENABLE_MPU == YES)
+
 #define ROUND_UP(n, a)          ((n + (a - 1)) & (a - 1))
 
 /**
@@ -147,6 +155,35 @@ static LOS_TASK_CB s_##name##CB =                                              \
     heapSize,                                                                  \
     heapSize ? s_##sp_##name + (s_##name##_stackSize - heapSize) : NULL,       \
     s_##name##_stackSize,                                                      \
+    s_##sp_##name,                                                             \
+    0,  /* uwTaskID init later? */                                             \
+    (TSK_ENTRY_FUNC) entry,                                                    \
+    NULL,                                                                      \
+    NULL,                                                                      \
+    arg,                                                                       \
+    taskName,                                                                  \
+    {0},    /* stPendList init later */                                        \
+    {0},    /* stTimerList */                                                  \
+}
+
+#else
+
+/**
+ * @ingroup los_task
+ * Define a task statically.
+ */
+#define LOS_TASK_DEF(name, taskName, entry, taskPrio, arg, stackSize, ...)     \
+LOS_STATIC_ASSERT (taskPrio <= OS_TASK_PRIORITY_LOWEST);                       \
+LOS_STATIC_ASSERT (taskPrio >= 0);                                             \
+LOS_STATIC_ASSERT (stackSize > sizeof (TSK_CONTEXT_S));                        \
+LOS_STATIC_ASSERT ((stackSize & 7) == 0);                                      \
+static INT64 s_##sp_##name [stackSize / sizeof (INT64)] = {0};                 \
+static LOS_TASK_CB s_##name##CB =                                              \
+{                                                                              \
+    &((TSK_CONTEXT_S *) (&s_##sp_##name [stackSize / sizeof (INT64)]))[-1],    \
+    OS_TASK_STATUS_SUSPEND,                                                    \
+    taskPrio,                                                                  \
+    stackSize,                                                                 \
     (UINT32) s_##sp_##name,                                                    \
     0,  /* uwTaskID init later? */                                             \
     (TSK_ENTRY_FUNC) entry,                                                    \
@@ -157,6 +194,8 @@ static LOS_TASK_CB s_##name##CB =                                              \
     {0},    /* stPendList init later */                                        \
     {0},    /* stTimerList */                                                  \
 }
+
+#endif
 
 extern UINT32 LOS_StaticTaskInit(void *pvTaskCB, UINT32 *puwTaskID);
 

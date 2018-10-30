@@ -244,6 +244,17 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_KernelInit(VOID)
 #if (LOSCFG_ENABLE_MPU == YES)
     void mpu_init (void);
     mpu_init ();
+
+
+#if (LOSCFG_PLATFORM_HWI == YES)
+#if (OS_HWI_WITH_ARG == YES)
+    extern void SVC_Handler (void *);
+    osSetVector(SVCall_IRQn, (HWI_PROC_FUNC)SVC_Handler, NULL);
+#else
+    extern void SVC_Handler (void);
+    osSetVector(SVCall_IRQn, SVC_Handler);
+#endif
+#endif
 #endif
 
     return LOS_OK;

@@ -736,7 +736,7 @@ uint32_t osThreadGetCount (void)
 
     for(; index <= LOSCFG_BASE_CORE_TSK_LIMIT; index++)
     {
-        if (!((g_pstTaskCBArray + index)->usTaskStatus & OS_TASK_STATUS_UNUSED))
+        if (!((OS_TCB_FROM_TID(index))->usTaskStatus & OS_TASK_STATUS_UNUSED))
         {
             uwCount++;
         }

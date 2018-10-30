@@ -751,12 +751,7 @@ LITE_OS_SEC_TEXT_INIT VOID osTaskEntry(UINT32 uwTaskID)
 
     g_usLosTaskLock = 0;
 
-#if (LOSCFG_STATIC_TASK == NO)
     (VOID)LOS_TaskDelete(pstTaskCB->uwTaskID);
-#else
-    (VOID)LOS_TaskSuspend(pstTaskCB->uwTaskID);
-#endif
-
 }
 
 #if (LOSCFG_STATIC_TASK == YES)
@@ -1089,7 +1084,6 @@ LOS_ERREND:
     return uwErrRet;
 }
 
-#if (LOSCFG_STATIC_TASK == NO)
 /*****************************************************************************
  Function : LOS_TaskDelete
  Description : Delete a task
@@ -1099,6 +1093,7 @@ LOS_ERREND:
  *****************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 uwTaskID)
 {
+#if (LOSCFG_STATIC_TASK == NO)
     UINTPTR uvIntSave;
     LOS_TASK_CB *pstTaskCB;
     UINT16 usTempStatus;
@@ -1174,8 +1169,10 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_TaskDelete(UINT32 uwTaskID)
 LOS_ERREND:
     (VOID)LOS_IntRestore(uvIntSave);
     return uwErrRet;
-}
+#else
+    (VOID)LOS_TaskSuspend(uwTaskID);
 #endif
+}
 
 /*****************************************************************************
  Function : LOS_TaskDelay

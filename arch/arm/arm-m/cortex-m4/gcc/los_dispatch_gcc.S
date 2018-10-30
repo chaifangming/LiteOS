@@ -134,6 +134,30 @@ LOS_StartToRun:
      *                                        Stack pointer after LOS_StartToRun--->|
      */
     LDR     R12, [R1]
+
+
+#ifdef LOSCFG_ENABLE_MPU
+
+    /**
+     * Set the CONTROL register
+     */
+
+    LDR     R0, [R1, #8]           /* TCB->pMpuSettings */
+    CMP     R0, #0
+    BEQ     1f
+    LDR     R1, =0xe000ed9c
+    MOV     R4, #6                 /* 6 regions */
+0:
+    LDM     R0!, {R2, R3}
+    STM     R1, {R2, R3}
+    SUBS    R4, R4, #1
+    BNE     0b
+1:
+    LDR     R0, [R12], #4
+    MSR     CONTROL, R0
+#endif
+
+
     ADD     R12, R12, #36          /* skip R4-R11, PRIMASK. */
 #if defined (__VFP_FP__) && !defined(__SOFTFP__)
     ADD     R12, R12, #4           /* if FPU exist, skip EXC_RETURN. */
@@ -275,6 +299,11 @@ TaskSwitch:
 #endif
     STMFD   R0!, {R4-R12}          /* save the core registers and PRIMASK. */
 
+#ifdef LOSCFG_ENABLE_MPU
+    MRS     R1, CONTROL
+    STR     R1, [R0, #-4]!
+#endif
+
     /**
      * R5,R8.
      */
@@ -316,6 +345,26 @@ TaskSwitch:
      * (R1 = g_stLosTask.pstNewTask->pStackPointer)
      */
     LDR     R1, [R0]
+
+#ifdef LOSCFG_ENABLE_MPU
+    /**
+     * Set the CONTROL register
+     */
+
+    LDR     R4, [R0, #8]           /* TCB->pMpuSettings */
+    CMP     R4, #0
+    BEQ     1f
+    LDR     R5, =0xe000ed9c
+    MOV     R6, #6                 /* 6 regions, cortex-m0+ do not have alias reg */
+0:
+    LDM     R4!, {R2, R3}
+    STM     R5, {R2, R3}
+    SUBS    R6, R6, #1
+    BNE     0b
+1:
+    LDR     R4, [R1], #4
+    MSR     CONTROL, R4
+#endif
 
     /**
      * Restore the stack frame(R4-R11,[S16-S31]) of the next running task.
@@ -367,4 +416,38 @@ TaskSwitch:
      */
     MSR     PRIMASK, R12
     BX      LR
+
+#ifdef LOSCFG_ENABLE_MPU
+    .global osEnterPrivileged
+    .global osExitPrivileged
+    .global osIsPrivileged
+
+osEnterPrivileged:
+    MRS     R0, CONTROL
+    TST     R0, #1
+    BEQ     0f
+
+    MOV     R1, #0x5a   /* magic */
+    MOV     R12, R1     /* SVC# is saved in R12, #1 = enter privileged */
+
+    SVC     #0
+0:
+    BX      LR
+
+osExitPrivileged:
+    TST     R0, #1
+    BEQ     0f
+
+    MRS     R0, CONTROL
+    ORR     R0, R0, #1
+    MSR     CONTROL, R0
+0:
+    BX      LR
+
+osIsPrivileged:
+    MRS     R0, CONTROL
+    AND     R0, R0, #1
+    BX      LR
+
+#endif
 
